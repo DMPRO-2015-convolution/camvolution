@@ -1,18 +1,19 @@
 library IEEE;
 use IEEE.STD_LOGIC_1164.ALL;
 
-entity ResizeBuffer is
+entity upsize_buffer is
 	port (
 		clk : in std_logic;
+		reset : in boolean;
 		data_in : in std_logic_vector(15 downto 0);
 		data_out : out std_logic_vector(23 downto 0);
 		data_in_valid : in std_logic;
 		data_out_valid : out std_logic
 	);
 
-end ResizeBuffer;
+end upsize_buffer;
 
-architecture Behavioral of ResizeBuffer is
+architecture Behavioral of upsize_buffer is
 	type state_t is (STATE_LAST, STATE_FIRST, STATE_SHIFT);
 	signal state : state_t;
 	signal stage1, stage2 : std_logic_vector(15 downto 0);
@@ -28,7 +29,11 @@ begin
 
 	process(clk) begin
 		if rising_edge(clk) then
-			if data_in_valid = '1' then
+
+			if reset then
+				state <= STATE_LAST;
+				shifted_last_cycle <= false;
+			elsif data_in_valid = '1' then
 			
 				-- Update state
 				case state is
