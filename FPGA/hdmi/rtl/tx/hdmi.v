@@ -11,7 +11,12 @@ module hdmi (
 
   output wire [3:0] TMDS,
   output wire [3:0] TMDSB,
-  output wire [3:0] LED
+  
+  // Pixel input interface
+  output wire pclk,
+  output wire pready,
+  input wire [23:0] pdata
+//  output wire [3:0] LED
 );
 
   //******************************************************************//
@@ -225,7 +230,8 @@ module hdmi (
   //
   // DCM_CLKGEN to generate a pixel clock with a variable frequency
   //
-  wire          clkfx, pclk;
+  //wire          clkfx, pclk;
+  wire clkfx;
   DCM_CLKGEN #(
     .CLKFX_DIVIDE (21),
     .CLKFX_MULTIPLY (31),
@@ -680,5 +686,5 @@ module hdmi (
 
  // LEDs
  //assign LED = {bufpll_lock, RSTBTN, VGA_HSYNC, VGA_VSYNC} ;
- assign LED = {bufpll_lock, led_test_1, VGA_HSYNC, VGA_VSYNC} ;
+ //assign LED = {bufpll_lock, led_test_1, VGA_HSYNC, VGA_VSYNC} ;
 endmodule

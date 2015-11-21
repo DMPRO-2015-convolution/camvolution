@@ -25,7 +25,7 @@ entity memory_manager is
 		daisy_ready : out std_logic;
 		
 		-- HDMI
-		hdmi_ready, hdmi_clk : in std_logic; -- active high?
+		hdmi_ready : in std_logic; -- active high?
 		hdmi_data : out std_logic_vector(23 downto 0);
 		hdmi_valid : out std_logic;
 		
