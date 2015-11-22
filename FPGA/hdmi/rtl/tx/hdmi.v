@@ -5,12 +5,14 @@
 module hdmi (
   input  wire RSTBTN,
 
-  input  wire SYS_CLK,
-
+  //input  wire SYS_CLK,
+  input wire sysclk,
   input  wire [3:0] SW,
 
   output wire [3:0] TMDS,
   output wire [3:0] TMDSB,
+  
+  
   
   // Pixel input interface
   output wire pclk,
@@ -30,7 +32,7 @@ module hdmi (
 
   wire          pwrup;
 
-  IBUF sysclk_buf (.I(SYS_CLK), .O(sysclk));
+  //IBUF sysclk_buf (.I(SYS_CLK), .O(sysclk));
 
   wire        clkfb;
   wire        sysclk_50;
