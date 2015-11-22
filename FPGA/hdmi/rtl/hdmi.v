@@ -9,7 +9,10 @@ module hdmi (
   input wire [3:0]  RX0_TMDSB,
 
   output wire [3:0] TX0_TMDS,
-  output wire [3:0] TX0_TMDSB
+  output wire [3:0] TX0_TMDSB,
+
+  output wire [23:0] received_pixel,
+  input wire [23:0] processed_pixel
 
  // input  wire [1:0] SW,
 
@@ -40,6 +43,10 @@ module hdmi (
   synchro_sws_1 (.async(SW[1]),.sync(sws[1]),.clk(clk25));
 
   wire [1:0] select = sws;
+
+  wire [7:0] processed_red;
+  wire [7:0] processed_green;
+  wire [7:0] processed_blue;
 
   reg [1:0] select_q = 2'b00;
   reg [1:0] switch = 2'b00;
@@ -113,8 +120,9 @@ module hdmi (
     .sdout       (rx0_sdata),
     .red         (rx0_red),
     .green       (rx0_green),
-    .blue        (rx0_blue)); 
+    .blue        (rx0_blue));
 
+    assign received_pixel = {rx0_red, rx0_green, rx0_blue};
   // TMDS output
 `ifdef DIRECTPASS
   wire rstin         = rx0_reset;
@@ -226,6 +234,7 @@ module hdmi (
   assign tx0_vsync        = rx0_vsync;
   assign tx0_pll_reset    = rx0_reset;
 
+    assign {processed_red, processed_green, processed_blue} = processed_pixel;
   //////////////////////////////////////////////////////////////////
   // Instantiate a dedicate PLL for output port
   //////////////////////////////////////////////////////////////////
@@ -285,9 +294,9 @@ module hdmi (
     .pclkx10     (tx0_pclkx10),
     .serdesstrobe(tx0_serdesstrobe),
     .rstin       (tx0_reset),
-    .blue_din    (tx0_blue),
-    .green_din   (tx0_green),
-    .red_din     (tx0_red),
+    .blue_din    (processed_blue),
+    .green_din   (processed_green),
+    .red_din     (processed_red),
     .hsync       (tx0_hsync),
     .vsync       (tx0_vsync),
     .de          (tx0_de),
