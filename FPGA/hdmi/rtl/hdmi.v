@@ -1,7 +1,7 @@
 
 `timescale 1 ns / 1 ps
 
-`define DIRECTPASS
+//`define DIRECTPASS
 
 module hdmi (
   //input wire        RSTBTN,    //The pink reset button
@@ -278,10 +278,6 @@ module hdmi (
            .IOCLK(tx0_pclkx10), .SERDESSTROBE(tx0_serdesstrobe), .LOCK(tx0_bufpll_lock));
 
   assign tx0_reset = ~tx0_bufpll_lock;
-
-assign tx0_blue = 8'b11111111;
-assign tx0_red = 8'b10101010;
-assign tx0_green = 8'b01010101;
 
 
   dvi_encoder_top dvi_tx0 (
