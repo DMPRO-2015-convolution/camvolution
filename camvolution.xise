@@ -83,24 +83,10 @@
       <association xil_pn:name="BehavioralSimulation"/>
       <association xil_pn:name="Implementation"/>
     </file>
-    <file xil_pn:name="ipcore_dir/fifo_16bit.xco" xil_pn:type="FILE_COREGEN">
-      <association xil_pn:name="BehavioralSimulation"/>
-      <association xil_pn:name="Implementation"/>
-    </file>
-    <file xil_pn:name="ipcore_dir/ram_clk_divider.xco" xil_pn:type="FILE_COREGEN">
-      <association xil_pn:name="BehavioralSimulation"/>
-      <association xil_pn:name="Implementation"/>
-    </file>
-    <file xil_pn:name="ipcore_dir/fifo_24bit.xco" xil_pn:type="FILE_COREGEN">
-      <association xil_pn:name="BehavioralSimulation"/>
-      <association xil_pn:name="Implementation"/>
-    </file>
     <file xil_pn:name="FPGA/hdmi/rtl/hdmi.v" xil_pn:type="FILE_VERILOG">
       <association xil_pn:name="BehavioralSimulation"/>
       <association xil_pn:name="Implementation"/>
     </file>
-    <file xil_pn:name="FPGA/hdmi/rtl/common/dcmspi.v" xil_pn:type="FILE_VERILOG"/>
-    <file xil_pn:name="FPGA/hdmi/rtl/common/debnce.v" xil_pn:type="FILE_VERILOG"/>
     <file xil_pn:name="FPGA/hdmi/rtl/common/DRAM16XN.v" xil_pn:type="FILE_VERILOG">
       <association xil_pn:name="BehavioralSimulation"/>
       <association xil_pn:name="Implementation"/>
@@ -137,7 +123,6 @@
       <association xil_pn:name="BehavioralSimulation"/>
       <association xil_pn:name="Implementation"/>
     </file>
-    <file xil_pn:name="FPGA/hdmi/rtl/tx/dvi_encoder.v" xil_pn:type="FILE_VERILOG"/>
     <file xil_pn:name="FPGA/hdmi/rtl/tx/encode.v" xil_pn:type="FILE_VERILOG">
       <association xil_pn:name="BehavioralSimulation"/>
       <association xil_pn:name="Implementation"/>
@@ -149,10 +134,15 @@
     <file xil_pn:name="camvolution.ucf" xil_pn:type="FILE_UCF">
       <association xil_pn:name="Implementation"/>
     </file>
-    <file xil_pn:name="ipcore_dir/fifo_16bit.xise" xil_pn:type="FILE_COREGENISE">
+    <file xil_pn:name="ipcore_dir/fifo_24bit.xco" xil_pn:type="FILE_COREGEN">
+      <association xil_pn:name="BehavioralSimulation"/>
       <association xil_pn:name="Implementation"/>
     </file>
-    <file xil_pn:name="ipcore_dir/ram_clk_divider.xise" xil_pn:type="FILE_COREGENISE">
+    <file xil_pn:name="ipcore_dir/fifo_16bit.xco" xil_pn:type="FILE_COREGEN">
+      <association xil_pn:name="BehavioralSimulation"/>
+      <association xil_pn:name="Implementation"/>
+    </file>
+    <file xil_pn:name="ipcore_dir/fifo_16bit.xise" xil_pn:type="FILE_COREGENISE">
       <association xil_pn:name="Implementation"/>
     </file>
   </files>

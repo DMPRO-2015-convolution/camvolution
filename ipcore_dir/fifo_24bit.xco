@@ -1,7 +1,7 @@
 ##############################################################
 #
 # Xilinx Core Generator version 12.4
-# Date: Sat Nov 21 22:07:23 2015
+# Date: Sun Nov 22 14:07:18 2015
 #
 ##############################################################
 #
@@ -47,7 +47,7 @@ CSET axis_type=FIFO
 CSET buser_width=1
 CSET clock_enable_type=Slave_Interface_Clock_Enable
 CSET clock_type_axi=Common_Clock
-CSET component_name=pixel_fifo
+CSET component_name=fifo_24bit
 CSET data_count=false
 CSET data_count_width=4
 CSET disable_timing_violations=false
@@ -200,4 +200,4 @@ CSET write_data_count_width=4
 CSET wuser_width=1
 # END Parameters
 GENERATE
-# CRC:  6372568
+# CRC: 80f36b6d
