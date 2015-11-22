@@ -8,7 +8,7 @@ VCCAUX = 3.3;
 ########################################
 NET SW6     LOC = P15 | IOSTANDARD = LVCMOS33;
 NET SW7     LOC = P16 | IOSTANDARD = LVCMOS33;
-NET LED     LOC = N11 | IOSTANDARD = LVCMOS33;
+#NET LED     LOC = N11 | IOSTANDARD = LVCMOS33;
 
 ##############################################################################
 # SYSCLK Input
@@ -16,15 +16,6 @@ NET LED     LOC = N11 | IOSTANDARD = LVCMOS33;
 Net SYS_CLK TNM_NET = SYS_CLK;
 TIMESPEC TS_SYS_CLK = PERIOD SYS_CLK 120000.0 kHz;
 NET "SYS_CLK"       LOC = "C9" | IOSTANDARD = LVCMOS33;
-
-##############################################################################
-# Mechanical Switches (SW) // FROM HDMI, to be changed
-##############################################################################
-
-NET "SW<0>"         LOC = "L13" | IOSTANDARD = LVCMOS33 ;
-NET "SW<1>"         LOC = "K16" | IOSTANDARD = LVCMOS33 ;
-NET "SW<2>"         LOC = "L16" | IOSTANDARD = LVCMOS33 ;
-NET "SW<3>"         LOC = "C17" | IOSTANDARD = LVCMOS33 ;
 
 ##############################################################################
 # DCM/PLL/BUFPLL positions // probably not to be uncommented
@@ -36,63 +27,62 @@ NET "SW<3>"         LOC = "C17" | IOSTANDARD = LVCMOS33 ;
 ########################################
 # Reset button and LEDs // FROM HDMI, to be changed
 ########################################
-NET "RSTBTN"        LOC = "H18" | IOSTANDARD = LVCMOS33;
-NET "LED<0>"        LOC = "J13" | IOSTANDARD = LVCMOS33;
-NET "LED<1>"        LOC = "K14" | IOSTANDARD = LVCMOS33;
-NET "LED<2>"        LOC = "U17" | IOSTANDARD = LVCMOS33;
-NET "LED<3>"        LOC = "U18" | IOSTANDARD = LVCMOS33;
+#NET "RSTBTN"        LOC = "H18" | IOSTANDARD = LVCMOS33;
 
 ###########################################
 # Timing Constraints // FROM HDMI
 ###########################################
-NET "sysclk_50" TNM_NET = "TNM_sysclk_50";
-TIMESPEC "TS_sysclk_50" = PERIOD "TNM_sysclk_50" 50 MHz HIGH 50 % PRIORITY 0 ;
+#NET "sysclk_50" TNM_NET = "TNM_sysclk_50";
+#TIMESPEC "TS_sysclk_50" = PERIOD "TNM_sysclk_50" 50 MHz HIGH 50 % PRIORITY 0 ;
 
-NET "clk50m_bufg" TNM_NET = "TNM_CLK50M";
-TIMESPEC "TS_CLK50M" = PERIOD "TNM_CLK50M" 50 MHz HIGH 50 % PRIORITY 0 ;
+#NET "clk50m_bufg" TNM_NET = "TNM_CLK50M";
+#TIMESPEC "TS_CLK50M" = PERIOD "TNM_CLK50M" 50 MHz HIGH 50 % PRIORITY 0 ;
 
-NET "pclk" TNM_NET = "TNM_PCLK";
-TIMESPEC "TS_PCLK" = PERIOD "TNM_PCLK" 108 MHz HIGH 50 % PRIORITY 0 ;
+#NET "pclk" TNM_NET = "TNM_PCLK";
+#TIMESPEC "TS_PCLK" = PERIOD "TNM_PCLK" 108 MHz HIGH 50 % PRIORITY 0 ;
 
-NET "pclkx2" TNM_NET = "TNM_PCLKX2";
-TIMESPEC "TS_PCLKX2" = PERIOD "TNM_PCLKX2" TS_PCLK * 2;
+#NET "pclkx2" TNM_NET = "TNM_PCLKX2";
+#TIMESPEC "TS_PCLKX2" = PERIOD "TNM_PCLKX2" TS_PCLK * 2;
 
-NET "pclkx10" TNM_NET = "TNM_PCLKX10";
-TIMESPEC "TS_PCLKX10" = PERIOD "TNM_PCLKX10" TS_PCLK * 10;
+#NET "pclkx10" TNM_NET = "TNM_PCLKX10";
+#TIMESPEC "TS_PCLKX10" = PERIOD "TNM_PCLKX10" TS_PCLK * 10;
 
 #
 # Multi-cycle paths
 #
-TIMEGRP "bramgrp" = RAMS(enc0/pixel2x/dataint<*>);
-TIMEGRP "fddbgrp" = FFS(enc0/pixel2x/db<*>);
-TIMEGRP "bramra" = FFS(enc0/pixel2x/ra<*>);
+#TIMEGRP "bramgrp" = RAMS(enc0/pixel2x/dataint<*>);
+#TIMEGRP "fddbgrp" = FFS(enc0/pixel2x/db<*>);
+#TIMEGRP "bramra" = FFS(enc0/pixel2x/ra<*>);
 
-TIMESPEC "TS_ramdo" = FROM "bramgrp" TO "fddbgrp" TS_PCLK;
-TIMESPEC "TS_ramra" = FROM "bramra" TO "fddbgrp" TS_PCLK;
+#TIMESPEC "TS_ramdo" = FROM "bramgrp" TO "fddbgrp" TS_PCLK;
+#TIMESPEC "TS_ramra" = FROM "bramra" TO "fddbgrp" TS_PCLK;
 
 ############################
 # TMDS pairs on the top
 ############################
 
-# HDMI output 1
-NET "TMDS(1)"  	 LOC = "B3" | IOSTANDARD = TMDS_33 ; # Red
-NET "TMDSB(1)"    LOC = "A3" | IOSTANDARD = TMDS_33 ;
-NET "TMDS(2)"  	 LOC = "D6" | IOSTANDARD = TMDS_33 ; # Green
-NET "TMDSB(2)"    LOC = "C6" | IOSTANDARD = TMDS_33 ;
-NET "TMDS(0)"  	 LOC = "B2" | IOSTANDARD = TMDS_33 ; # Blue
-NET "TMDSB(0)"    LOC = "A2" | IOSTANDARD = TMDS_33 ;
-NET "TMDS(3)"  	 LOC = "B4" | IOSTANDARD = TMDS_33 ; # Clock
-NET "TMDSB(3)"    LOC = "A4" | IOSTANDARD = TMDS_33 ;
 
-# HDMI output 2
-#NET "TMDS(1)"  	LOC = "C10" | IOSTANDARD = TMDS_33 ; # Red
-#NET "TMDSB(1)"    LOC = "A10" | IOSTANDARD = TMDS_33 ;
-#NET "TMDS(2)"  	LOC = "D11"  | IOSTANDARD = TMDS_33 ; # Green
-#NET "TMDSB(2)"    LOC = "C11"  | IOSTANDARD = TMDS_33 ;
-#NET "TMDS(0)"  	LOC = "B9" | IOSTANDARD = TMDS_33 ; # Blue
-#NET "TMDSB(0)"    LOC = "A9" | IOSTANDARD = TMDS_33 ;
-#NET "TMDS(3)"  	LOC = "G9"  | IOSTANDARD = TMDS_33 ; # Clock
-#NET "TMDSB(3)"    LOC = "F9"  | IOSTANDARD = TMDS_33 ;
+# HDMI input
+
+NET "RX0_TMDS(3)"  	LOC = "B9" |IOSTANDARD = TMDS_33 ; # CLK
+NET "RX0_TMDSB(3)"  LOC = "A9" |IOSTANDARD = TMDS_33 ;
+NET "RX0_TMDS(2)"  	LOC = "C10" |IOSTANDARD = TMDS_33 ; # Red
+NET "RX0_TMDSB(2)"  LOC = "A10" |IOSTANDARD = TMDS_33 ;
+NET "RX0_TMDS(1)"  	LOC = "D11" |IOSTANDARD = TMDS_33 ; # Green	
+NET "RX0_TMDSB(1)"  LOC = "C11" |IOSTANDARD = TMDS_33 ;
+NET "RX0_TMDS(0)"  	LOC = "G9"  |IOSTANDARD = TMDS_33 ; # Blue	
+NET "RX0_TMDSB(0)"  LOC = "F9"  |IOSTANDARD = TMDS_33 ;
+
+# HDMI output
+NET "TX0_TMDS(3)"  	LOC = "B4" |IOSTANDARD = TMDS_33 ; # Clock	
+NET "TX0_TMDSB(3)"  LOC = "A4" |IOSTANDARD = TMDS_33 ;
+NET "TX0_TMDS(2)"  	LOC = "B3" |IOSTANDARD = TMDS_33 ; # Red 	
+NET "TX0_TMDSB(2)"  LOC = "A3" |IOSTANDARD = TMDS_33 ;
+NET "TX0_TMDS(1)"  	LOC = "D6" |IOSTANDARD = TMDS_33 ; # Green	
+NET "TX0_TMDSB(1)"  LOC = "C6" |IOSTANDARD = TMDS_33 ;
+NET "TX0_TMDS(0)"  	LOC = "B2" |IOSTANDARD = TMDS_33 ; # Blue
+NET "TX0_TMDSB(0)"  LOC = "A2" |IOSTANDARD = TMDS_33 ;
+
 
 ########################################
 # SRAM 1
