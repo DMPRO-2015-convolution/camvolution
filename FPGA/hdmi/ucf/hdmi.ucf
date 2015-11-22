@@ -93,13 +93,5 @@ NET "RX0_TMDSB(0)"  LOC = "F9"  |IOSTANDARD = TMDS_33 ;
 ##############################################
 ########################################
 # Reset button and LEDs and Mechanical Switches (SW)
-########################################
+
 NET "rstbtn_n" LOC = "T15" | IOSTANDARD = LVCMOS33;
-NET "LED<0>"   LOC = "U18" | IOSTANDARD = LVCMOS33;
-NET "LED<1>"   LOC = "M14" | IOSTANDARD = LVCMOS33;
-NET "LED<2>"   LOC = "N14" | IOSTANDARD = LVCMOS33;
-NET "LED<3>"   LOC = "L14" | IOSTANDARD = LVCMOS33;
-NET "LED<4>"   LOC = "M13" | IOSTANDARD = LVCMOS33;
-NET "LED<5>"   LOC = "D4"  | IOSTANDARD = LVCMOS33;
-NET "LED<6>"   LOC = "P16" | IOSTANDARD = LVCMOS33;
-NET "LED<7>"   LOC = "N12" | IOSTANDARD = LVCMOS33;

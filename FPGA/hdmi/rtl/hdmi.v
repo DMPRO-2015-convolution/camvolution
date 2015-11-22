@@ -1,25 +1,25 @@
-
 `timescale 1 ns / 1 ps
 
 //`define DIRECTPASS
 
 module hdmi (
-  //input wire        RSTBTN,    //The pink reset button
-  input wire        clk120,      //120 MHz osicallator
+  input wire        rstbtn_n,    //The pink reset button
+  input wire        clk120,      //100 MHz osicallator
   input wire [3:0]  RX0_TMDS,
   input wire [3:0]  RX0_TMDSB,
 
   output wire [3:0] TX0_TMDS,
   output wire [3:0] TX0_TMDSB
 
-  //output wire [7:0] LED
+ // input  wire [1:0] SW,
+
+ // output wire [7:0] LED
 );
 
   ////////////////////////////////////////////////////
   // 25 MHz and switch debouncers
   ////////////////////////////////////////////////////
   wire clk25, clk25m;
-
 
   wire [1:0] SW;
 
@@ -113,7 +113,7 @@ module hdmi (
     .sdout       (rx0_sdata),
     .red         (rx0_red),
     .green       (rx0_green),
-    .blue        (rx0_blue));
+    .blue        (rx0_blue)); 
 
   // TMDS output
 `ifdef DIRECTPASS
@@ -279,7 +279,6 @@ module hdmi (
 
   assign tx0_reset = ~tx0_bufpll_lock;
 
-
   dvi_encoder_top dvi_tx0 (
     .pclk        (tx0_pclk),
     .pclkx2      (tx0_pclkx2),
@@ -295,13 +294,10 @@ module hdmi (
     .TMDS        (TX0_TMDS),
     .TMDSB       (TX0_TMDSB));
 
-
 `endif
 
   //////////////////////////////////////
   // Status LED
   //////////////////////////////////////
-  assign LED = {rx0_red_rdy, rx0_green_rdy, rx0_blue_rdy,
-                rx0_de};
 
 endmodule
