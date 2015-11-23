@@ -9,13 +9,11 @@ module hdmi (
   input wire [3:0]  RX0_TMDSB,
 
   output wire [3:0] TX0_TMDS,
-  output wire [3:0] TX0_TMDSB
+  output wire [3:0] TX0_TMDSB,
 
- // output wire [23:0] received_pixel,
-  //input wire [23:0] processed_pixel,
-
-  //output wire [2:0] metadata_out,
-  //input wire [2:0] metadata_in
+	output wire [23:0] received_pixel,
+	output wire tx0_pclk,
+  input wire [23:0] processed_pixel
 
  // input  wire [1:0] SW,
 
@@ -32,7 +30,7 @@ module hdmi (
   assign SW[0] = 1'b1;
   assign SW[1] = 1'b1;
   
-    wire         tx0_pclk;
+  //wire         tx0_pclk;
 
  // BUFIO2 #(.DIVIDE_BYPASS("FALSE"), .DIVIDE(6))
  // sysclk_div (.DIVCLK(clk25m), .IOCLK(), .SERDESSTROBE(), .I(clk120));
@@ -148,16 +146,6 @@ pixel_fifo pixelfifo (
 	.full(full_lol),
 	.empty(empty_lol)// Bus [26 : 0] 
 	);
-	
-	fifo_test test (
-	.wr_clk(rx0_pclk),
-	.rd_clk(tx0_pclk),
-	.din(hsync), // Bus [0 : 0] 
-	.wr_en(1),
-	.rd_en(1),
-	.dout(tx0_de), // Bus [0 : 0] 
-	.full(fully),
-	.empty(emptyy));
 
 	
     wire [7:0] red;
@@ -184,7 +172,7 @@ pixel_fifo pixelfifo (
 
     assign metadata_out = metadata_rx;
     assign metadata_rx = {rx0_hsync, rx0_vsync, rx0_de};
-    assign received_pixel = pixel_from_hdmi;
+    //assign received_pixel = pixel_from_hdmi;
     assign pixel_from_hdmi = {rx0_red, rx0_green, rx0_blue};
 //
   // TMDS output
@@ -355,14 +343,15 @@ pixel_fifo pixelfifo (
 
   assign tx0_reset = ~tx0_bufpll_lock;
 
+	// Send pixel out of module
+	assign received_pixel = pixel_from_fifo[23:0];
 
-	//assign {processed_red, processed_green, processed_blue, processed_hsync, processed_vsync, processed_de} = pixel_from_fifo;
-    assign processed_red = pixel_from_fifo[7:0];
-    assign processed_green = pixel_from_fifo[15:8];
-    assign processed_blue = pixel_from_fifo[23:16];
-    assign processed_hsync = pixel_from_fifo[24];
-    assign processed_vsync = pixel_from_fifo[25];
-    assign processed_de = pixel_from_fifo[26];
+	assign processed_red = pixel_from_fifo[7:0];
+	assign processed_green = pixel_from_fifo[15:8];
+	assign processed_blue = pixel_from_fifo[23:16];
+	assign processed_hsync = pixel_from_fifo[24];
+	assign processed_vsync = pixel_from_fifo[25];
+	assign processed_de = pixel_from_fifo[26];
 	
   dvi_encoder_top dvi_tx0 (
     .pclk        (tx0_pclk),
@@ -370,9 +359,12 @@ pixel_fifo pixelfifo (
     .pclkx10     (tx0_pclkx10),
     .serdesstrobe(tx0_serdesstrobe),
     .rstin       (tx0_reset),
-    .blue_din    (processed_blue),
-    .green_din   (processed_green),
-    .red_din     (processed_red),
+    //.blue_din    (processed_blue),
+    //.green_din   (processed_green),
+    //.red_din     (processed_red),
+		.blue_din(processed_pixel[23:16]),
+		.green_din(processed_pixel[15:8]),
+		.red_din(processed_pixel[7:0]),
    // .blue_din    (tx0_blue),
    // .green_din   (tx0_green),
    // .red_din     (tx0_red),

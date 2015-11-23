@@ -88,6 +88,9 @@ architecture Behavioral of Camvolution is
 	signal hdmi_data, pixel_data : std_logic_vector(23 downto 0);
 	signal hdmi_ready, hdmi_valid, pixel_ready : std_logic := '0';
 	
+
+	signal tx0_pclk : std_logic;
+	signal received_pixel, processed_pixel : std_logic_vector(23 downto 0);
 	
 	component IBUF
 		port (O: out STD_ULOGIC;
@@ -144,8 +147,6 @@ architecture Behavioral of Camvolution is
 	port (
 	clk : in std_logic; 
 	reset : in std_logic;
-	meta_out : out std_logic_vector(2 downto 0);
-	meta_in : in std_logic_vector(2 downto 0);
    io_hdmi_data_in : inout std_logic_vector(23 downto 0);
    io_data_out : out std_logic_vector(23 downto 0)
  
@@ -177,15 +178,13 @@ port map(
 	
 	
 		
---daisy :  Tile
---	port map(
---	clk => clk25, 
---	reset => io_reset,
---	meta_in => metadata_out,
---	meta_out => metadata_in,
---	io_hdmi_data_in => pixel_from_hdmi,
- -- io_data_out => pixel_from_daisy
---);
+daisy :  Tile
+	port map(
+	clk => tx0_pclk, 
+	reset => io_reset,
+	io_hdmi_data_in => received_pixel,
+	io_data_out => processed_pixel
+);
 
 	led <= '0';
 	
@@ -247,7 +246,10 @@ port map(
 		RX0_TMDS => RX0_TMDS, 
 		RX0_TMDSB => RX0_TMDSB,
 		TX0_TMDS => TX0_TMDS,
-		TX0_TMDSB => TX0_TMDSB
+		TX0_TMDSB => TX0_TMDSB,
+		tx0_pclk => tx0_pclk,
+		received_pixel => received_pixel,
+		processed_pixel => processed_pixel
 		--metadata_out => metadata_out,
 		--metadata_in => metadata_in,
 		--received_pixel => pixel_from_hdmi,
