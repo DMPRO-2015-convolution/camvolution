@@ -90,7 +90,7 @@ architecture Behavioral of Camvolution is
 	
 
 	signal tx0_pclk : std_logic;
-	signal received_pixel, processed_pixel : std_logic_vector(23 downto 0);
+	signal received_pixel, processed_pixel, daisy_out : std_logic_vector(23 downto 0);
 	
 	component IBUF
 		port (O: out STD_ULOGIC;
@@ -183,10 +183,11 @@ daisy :  Tile
 	clk => tx0_pclk, 
 	reset => io_reset,
 	io_hdmi_data_in => received_pixel,
-	io_data_out => processed_pixel
+	io_data_out => daisy_out
 );
 
 	led <= '0';
+	processed_pixel <= hdmi_data; -- when efm_mode else daisy_out;
 	
 --   generate_sysclk : IBUF
  --    port map (
@@ -208,36 +209,36 @@ daisy :  Tile
 	sram2_lb <= '0';
 	sram2_ub <= '0';
 	
---	memory_manager : entity work.memory_manager
---		generic map (
---			IMAGE_WIDTH => IMAGE_WIDTH,
---			IMAGE_HEIGHT => IMAGE_HEIGHT
---		)
---		port map (
---			clk => clk120,
---			reset => false,
---			efm_mode => efm_mode,
---			ebi_address => ebi_address(18 downto 0),
---			ebi_data => ebi_data,
---			ebi_wen => ebi_wen,
---			ebi_ren => ebi_ren,
---			ebi_cs => ebi_cs0,
---			daisy_data => x"0000",
---			daisy_valid => '0',
---			hdmi_ready => hdmi_ready,
---			hdmi_data => hdmi_data,
---			hdmi_valid => hdmi_valid,
---			sram1_address => sram1_address,
---			sram1_data => sram1_data,
---			sram1_ce => sram1_ce,
---			sram1_oe => sram1_oe,
---			sram1_we => sram1_we,
---			sram2_address => sram2_address,
---			sram2_data => sram2_data,
---			sram2_ce => sram2_ce,
---			sram2_oe => sram2_oe,
---			sram2_we => sram2_we
---		);
+	memory_manager : entity work.memory_manager
+		generic map (
+			IMAGE_WIDTH => IMAGE_WIDTH,
+			IMAGE_HEIGHT => IMAGE_HEIGHT
+		)
+		port map (
+			clk => tx0_pclk,
+			reset => false,
+			efm_mode => true,
+			ebi_address => ebi_address(18 downto 0),
+			ebi_data => ebi_data,
+			ebi_wen => ebi_wen,
+			ebi_ren => ebi_ren,
+			ebi_cs => ebi_cs0,
+			daisy_data => x"0000",
+			daisy_valid => '0',
+			hdmi_ready => '1',
+			hdmi_data => hdmi_data,
+			hdmi_valid => hdmi_valid,
+			sram1_address => sram1_address,
+			sram1_data => sram1_data,
+			sram1_ce => sram1_ce,
+			sram1_oe => sram1_oe,
+			sram1_we => sram1_we,
+			sram2_address => sram2_address,
+			sram2_data => sram2_data,
+			sram2_ce => sram2_ce,
+			sram2_oe => sram2_oe,
+			sram2_we => sram2_we
+		);
 
 	hdmi : entity work.hdmi
 	port map (
