@@ -177,15 +177,15 @@ port map(
 	
 	
 		
-daisy :  Tile
-	port map(
-	clk => clk25, 
-	reset => io_reset,
-	meta_in => metadata_out,
-	meta_out => metadata_in,
-	io_hdmi_data_in => pixel_from_hdmi,
-  io_data_out => pixel_from_daisy
-);
+--daisy :  Tile
+--	port map(
+--	clk => clk25, 
+--	reset => io_reset,
+--	meta_in => metadata_out,
+--	meta_out => metadata_in,
+--	io_hdmi_data_in => pixel_from_hdmi,
+ -- io_data_out => pixel_from_daisy
+--);
 
 	led <= '0';
 	
@@ -247,11 +247,11 @@ daisy :  Tile
 		RX0_TMDS => RX0_TMDS, 
 		RX0_TMDSB => RX0_TMDSB,
 		TX0_TMDS => TX0_TMDS,
-		TX0_TMDSB => TX0_TMDSB,
-		metadata_out => metadata_out,
-		metadata_in => metadata_in,
-		received_pixel => pixel_from_hdmi,
-		processed_pixel => pixel_from_daisy
+		TX0_TMDSB => TX0_TMDSB
+		--metadata_out => metadata_out,
+		--metadata_in => metadata_in,
+		--received_pixel => pixel_from_hdmi,
+		--processed_pixel => pixel_from_daisy
 		--pclk => pixel_clk,
 		--pdata => pixel_data,
 		--pready => pixel_ready

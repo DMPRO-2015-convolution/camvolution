@@ -9,13 +9,13 @@ module hdmi (
   input wire [3:0]  RX0_TMDSB,
 
   output wire [3:0] TX0_TMDS,
-  output wire [3:0] TX0_TMDSB,
+  output wire [3:0] TX0_TMDSB
 
-  output wire [23:0] received_pixel,
-  input wire [23:0] processed_pixel,
+ // output wire [23:0] received_pixel,
+  //input wire [23:0] processed_pixel,
 
-  output wire [2:0] metadata_out,
-  input wire [2:0] metadata_in
+  //output wire [2:0] metadata_out,
+  //input wire [2:0] metadata_in
 
  // input  wire [1:0] SW,
 
@@ -28,9 +28,11 @@ module hdmi (
  // wire clk25, clk25m;
 
   wire [1:0] SW;
-
+  wire         tx0_de;
   assign SW[0] = 1'b1;
   assign SW[1] = 1'b1;
+  
+    wire         tx0_pclk;
 
  // BUFIO2 #(.DIVIDE_BYPASS("FALSE"), .DIVIDE(6))
  // sysclk_div (.DIVCLK(clk25m), .IOCLK(), .SERDESSTROBE(), .I(clk120));
@@ -129,10 +131,56 @@ module hdmi (
     .green       (rx0_green),
     .blue        (rx0_blue));
 
+
     wire [23:0] pixel_from_hdmi;
 
+    wire [26:0] pixel_from_fifo; 
+    wire [26:0] fifo_data;
     wire [2:0] metadata_rx;
+	 
+pixel_fifo pixelfifo (
+	.wr_clk(rx0_pclk),
+	.rd_clk(tx0_pclk),
+	.din(fifo_data), // Bus [26 : 0] 
+	.wr_en(1),
+	.rd_en(1),
+	.dout(pixel_from_fifo),
+	.full(full_lol),
+	.empty(empty_lol)// Bus [26 : 0] 
+	);
+	
+	fifo_test test (
+	.wr_clk(rx0_pclk),
+	.rd_clk(tx0_pclk),
+	.din(hsync), // Bus [0 : 0] 
+	.wr_en(1),
+	.rd_en(1),
+	.dout(tx0_de), // Bus [0 : 0] 
+	.full(fully),
+	.empty(emptyy));
 
+	
+    wire [7:0] red;
+    wire [7:0] green;
+    wire [7:0] blue;
+//    wire hsync;
+    wire vsync;
+    wire de;
+
+    assign red = rx0_red;
+    assign green = rx0_green;
+    assign blue = rx0_blue;
+    assign hsync = rx0_hsync;
+    assign vsync = rx0_vsync;
+    assign de = rx0_de;
+
+	//wire [26:0] pixel_from_fifo;
+    assign fifo_data[7:0] = red;
+    assign fifo_data[15:8] = green;
+    assign fifo_data[23:16] = blue;
+    assign fifo_data[24] = hsync;
+    assign fifo_data[25] = vsync;
+    assign fifo_data[26] = de;
 
     assign metadata_out = metadata_rx;
     assign metadata_rx = {rx0_hsync, rx0_vsync, rx0_de};
@@ -229,8 +277,8 @@ module hdmi (
   // Output Port 0
   //
   /////////////////
-  wire         tx0_de;
-  wire         tx0_pclk;
+
+
   wire         tx0_pclkx2;
   wire         tx0_pclkx10;
   wire         tx0_serdesstrobe;
@@ -242,17 +290,17 @@ module hdmi (
   wire         tx0_vsync;
   wire         tx0_pll_reset;
 
-  assign tx0_de           = rx0_de;
-  assign tx0_blue         = rx0_blue;
-  assign tx0_green        = rx0_green;
-  assign tx0_red          = rx0_red;
-  assign tx0_hsync        = rx0_hsync;
-  assign tx0_vsync        = rx0_vsync;
+  //assign tx0_de           = rx0_de;
+  //assign tx0_blue         = rx0_blue;
+  //assign tx0_green        = rx0_green;
+  //assign tx0_red          = rx0_red;
+  //assign tx0_hsync        = rx0_hsync;
+  //assign tx0_vsync        = rx0_vsync;
   assign tx0_pll_reset    = rx0_reset;
 
-  assign {processed_red, processed_green, processed_blue} = processed_pixel;
+ // assign {processed_red, processed_green, processed_blue} = processed_pixel;
   
-  assign {processed_hsync, processed_vsync, processed_de} = metadata_in;
+ // assign {processed_hsync, processed_vsync, processed_de} = metadata_in;
 
   //////////////////////////////////////////////////////////////////
   // Instantiate a dedicate PLL for output port
@@ -307,6 +355,15 @@ module hdmi (
 
   assign tx0_reset = ~tx0_bufpll_lock;
 
+
+	//assign {processed_red, processed_green, processed_blue, processed_hsync, processed_vsync, processed_de} = pixel_from_fifo;
+    assign processed_red = pixel_from_fifo[7:0];
+    assign processed_green = pixel_from_fifo[15:8];
+    assign processed_blue = pixel_from_fifo[23:16];
+    assign processed_hsync = pixel_from_fifo[24];
+    assign processed_vsync = pixel_from_fifo[25];
+    assign processed_de = pixel_from_fifo[26];
+	
   dvi_encoder_top dvi_tx0 (
     .pclk        (tx0_pclk),
     .pclkx2      (tx0_pclkx2),
