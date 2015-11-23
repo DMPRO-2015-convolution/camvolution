@@ -4,7 +4,7 @@
 
 module hdmi (
   input wire        rstbtn_n,    //The pink reset button
-  input wire        clk120,      //100 MHz osicallator
+  input wire        clk25,      //100 MHz osicallator
   input wire [3:0]  RX0_TMDS,
   input wire [3:0]  RX0_TMDSB,
 
@@ -22,17 +22,17 @@ module hdmi (
   ////////////////////////////////////////////////////
   // 25 MHz and switch debouncers
   ////////////////////////////////////////////////////
-  wire clk25, clk25m;
+ // wire clk25, clk25m;
 
   wire [1:0] SW;
 
   assign SW[0] = 1'b1;
   assign SW[1] = 1'b1;
 
-  BUFIO2 #(.DIVIDE_BYPASS("FALSE"), .DIVIDE(6))
-  sysclk_div (.DIVCLK(clk25m), .IOCLK(), .SERDESSTROBE(), .I(clk120));
+ // BUFIO2 #(.DIVIDE_BYPASS("FALSE"), .DIVIDE(6))
+ // sysclk_div (.DIVCLK(clk25m), .IOCLK(), .SERDESSTROBE(), .I(clk120));
 
-  BUFG clk25_buf (.I(clk25m), .O(clk25));
+ // BUFG clk25_buf (.I(clk25m), .O(clk25));
 
   wire [1:0] sws;
 
@@ -122,7 +122,11 @@ module hdmi (
     .green       (rx0_green),
     .blue        (rx0_blue));
 
-    assign received_pixel = {rx0_red, rx0_green, rx0_blue};
+    wire [23:0] pixel_from_hdmi;
+
+    assign received_pixel = pixel_from_hdmi;
+    assign pixel_from_hdmi = {rx0_red, rx0_green, rx0_blue};
+//
   // TMDS output
 `ifdef DIRECTPASS
   wire rstin         = rx0_reset;
@@ -234,7 +238,8 @@ module hdmi (
   assign tx0_vsync        = rx0_vsync;
   assign tx0_pll_reset    = rx0_reset;
 
-    assign {processed_red, processed_green, processed_blue} = processed_pixel;
+  assign {processed_red, processed_green, processed_blue} = processed_pixel;
+
   //////////////////////////////////////////////////////////////////
   // Instantiate a dedicate PLL for output port
   //////////////////////////////////////////////////////////////////
@@ -294,9 +299,12 @@ module hdmi (
     .pclkx10     (tx0_pclkx10),
     .serdesstrobe(tx0_serdesstrobe),
     .rstin       (tx0_reset),
-    .blue_din    (processed_blue),
-    .green_din   (processed_green),
-    .red_din     (processed_red),
+   // .blue_din    (processed_blue),
+   // .green_din   (processed_green),
+   // .red_din     (processed_red),
+    .blue_din    (tx0_blue),
+    .green_din   (tx0_green),
+    .red_din     (tx0_red),
     .hsync       (tx0_hsync),
     .vsync       (tx0_vsync),
     .de          (tx0_de),
