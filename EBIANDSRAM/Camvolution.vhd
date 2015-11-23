@@ -46,13 +46,26 @@ architecture Behavioral of Camvolution is
    signal io_dbg_rdy_for_output : std_logic := '0';
    signal io_dbg_rdy_for_input : std_logic := '0';
 	
-	signal received_pixel : std_logic_vector(23 downto 0) :=(others => '0');
-	signal processed_pixel: std_logic_vector(23 downto 0) :=(others => '0');
+	signal clk25 : std_logic;
+	
+	signal pixel_from_hdmi : std_logic_vector(23 downto 0) :=(others => '0');
+	signal pixel_from_daisy : std_logic_vector(23 downto 0) :=(others => '0');
 	signal efm_mode : boolean;
 	
 	-- FIFO 16 bit
 	signal fifo_ebi_valid : std_logic;
 	signal fifo_ebi_ready : std_logic;
+	
+	signal metadata_in : std_logic_vector(2 downto 0) :=(others => '0');
+	signal metadata_out : std_logic_vector(2 downto 0) :=(others => '0');
+
+	
+	signal io_enable_in :std_logic := '1';
+	signal io_stall : std_logic := '0';
+	signal pixelclock : std_logic;
+	signal pixel_clk : std_logic;
+	signal ioclk : std_logic;
+	signal serdesstrobe : std_logic;
 	
 	-- Clock for HDMI module
 	signal sysclk : std_logic;
@@ -73,7 +86,7 @@ architecture Behavioral of Camvolution is
 
 	
 	signal hdmi_data, pixel_data : std_logic_vector(23 downto 0);
-	signal hdmi_ready, hdmi_valid, pixel_clk, pixel_ready : std_logic := '0';
+	signal hdmi_ready, hdmi_valid, pixel_ready : std_logic := '0';
 	
 	
 	component IBUF
@@ -81,10 +94,15 @@ architecture Behavioral of Camvolution is
 				I: in STD_ULOGIC);
 	end component;
 	
+	component BUFG
+		port (O: out STD_ULOGIC;
+				I: in STD_ULOGIC);
+	end component;
+	
 	component BUFIO2 
 	generic(
-		DIVIDE_BYPASS : boolean := FALSE;  -- TRUE, FALSE
-		DIVIDE        : integer := 3;     -- {1..8}
+		DIVIDE_BYPASS : boolean := TRUE;  -- TRUE, FALSE
+		DIVIDE        : integer := 1;     -- {1..8}
 		I_INVERT      : boolean := FALSE; -- TRUE, FALSE
 		USE_DOUBLER   : boolean := FALSE  -- TRUE, FALSE
 	);
@@ -96,10 +114,29 @@ architecture Behavioral of Camvolution is
 	);
 	end component;
 	
+	component DCM_CLKGEN
+	generic( 
+		CLKFX_MULTIPLY : integer := 5;
+		CLKF_DIVIDE : integer := 24
+		);
+	port (
+		CLKIN : in std_ulogic;
+		CLKFX : out std_ulogic
+	);
+	end component;
+	
+	
 	component IBUFG
 	port (
 		O : out std_ulogic;
 		I : in  std_ulogic
+	);
+	end component;
+	component sender
+	port (
+	clk : in std_logic;
+	received_pixel : in std_logic_vector(23 downto 0);
+	processed_pixel : out std_logic_vector(23 downto 0)
 	);
 	end component;
 	
@@ -107,61 +144,58 @@ architecture Behavioral of Camvolution is
 	port (
 	clk : in std_logic; 
 	reset : in std_logic;
-	io_control_data_in : in std_logic_vector(23 downto 0);
-   io_control_input_valid : in std_logic;
+	meta_out : out std_logic_vector(2 downto 0);
+	meta_in : in std_logic_vector(2 downto 0);
    io_hdmi_data_in : inout std_logic_vector(23 downto 0);
-   io_hdmi_input_valid : in std_logic;
-   io_reset : in std_logic;
-   io_data_out : out std_logic_vector(23 downto 0);
-   io_output_ready : out std_logic;
-   io_output_valid : out std_logic;
-	io_request_processed_data : in std_logic;
-   io_dbg_rdy_for_output : out std_logic;
-   io_dbg_rdy_for_input : out std_logic
+   io_data_out : out std_logic_vector(23 downto 0)
+ 
 );
 end component;
 
 begin
+
+
+clk25_generate : DCM_CLKGEN
+port map(
+		CLKIN => clk120,
+		CLKFX => clk25
+	);
+
+--pixelclock_generator : BUFIO2
+--	port map(
+--		DIVCLK     => divclk,
+--		IOCLK      => ioclk,
+--		SERDESSTROBE => serdesstrobe,
+--		I            => clk120
+--		);
+		
+--pixel_bufg : BUFG
+--	port map(
+--		O => pixel_clk,
+--		I => pixelclock
+--	);
+	
+	
+		
 daisy :  Tile
 	port map(
-	clk => clk120, 
-	reset => rstbtn_n,
-	io_control_data_in => io_control_data_in,
-   io_control_input_valid => io_control_input_valid,
-   io_hdmi_data_in => received_pixel,
-   io_hdmi_input_valid => io_hdmi_input_valid,
-   io_reset => io_reset,
-   io_data_out => processed_pixel,
-   io_output_ready => io_output_ready,
-   io_output_valid => io_output_valid,
-	io_request_processed_data => io_request_processed_data,
-   io_dbg_rdy_for_output => io_dbg_rdy_for_output,
-   io_dbg_rdy_for_input => io_dbg_rdy_for_input
+	clk => clk25, 
+	reset => io_reset,
+	meta_in => metadata_out,
+	meta_out => metadata_in,
+	io_hdmi_data_in => pixel_from_hdmi,
+  io_data_out => pixel_from_daisy
 );
+
 	led <= '0';
 	
 --   generate_sysclk : IBUF
- --     port map (
+ --    port map (
 --						O => sysclk,
 --					   I => clk120
 --						);
 
---	i_bufio2 : BUFIO2
---		generic map
---		(
---			DIVIDE			=> 3,		-- Do not divide the clock
---			DIVIDE_BYPASS	=> FALSE,	-- Bypass the clock divider
---			I_INVERT		=> FALSE,	-- Do not invert clock
---			USE_DOUBLER		=> FALSE	-- Do not double the clock
---		)
---		port map
---		(
---			DIVCLK			=> memoryclk,-- This clock must be transmitted to a BUFG
---			IOCLK			=> bufio2_sample_clock,	-- This clock must be used to sample datas on the IOBUF2
---			SERDESSTROBE	=> open,				-- Unused
---			I				=> clk120			-- This is the external clock for inputs
---		);
-		
+
 --	memory_clk_bufg : IBUFG
 --	port map(
 --		O => memory_clk,
@@ -175,47 +209,49 @@ daisy :  Tile
 	sram2_lb <= '0';
 	sram2_ub <= '0';
 	
-	memory_manager : entity work.memory_manager
-		generic map (
-			IMAGE_WIDTH => IMAGE_WIDTH,
-			IMAGE_HEIGHT => IMAGE_HEIGHT
-		)
-		port map (
-			clk => clk120,
-			reset => false,
-			efm_mode => efm_mode,
-			ebi_address => ebi_address(18 downto 0),
-			ebi_data => ebi_data,
-			ebi_wen => ebi_wen,
-			ebi_ren => ebi_ren,
-			ebi_cs => ebi_cs0,
-			daisy_data => x"0000",
-			daisy_valid => '0',
-			hdmi_ready => hdmi_ready,
-			hdmi_data => hdmi_data,
-			hdmi_valid => hdmi_valid,
-			sram1_address => sram1_address,
-			sram1_data => sram1_data,
-			sram1_ce => sram1_ce,
-			sram1_oe => sram1_oe,
-			sram1_we => sram1_we,
-			sram2_address => sram2_address,
-			sram2_data => sram2_data,
-			sram2_ce => sram2_ce,
-			sram2_oe => sram2_oe,
-			sram2_we => sram2_we
-		);
+--	memory_manager : entity work.memory_manager
+--		generic map (
+--			IMAGE_WIDTH => IMAGE_WIDTH,
+--			IMAGE_HEIGHT => IMAGE_HEIGHT
+--		)
+--		port map (
+--			clk => clk120,
+--			reset => false,
+--			efm_mode => efm_mode,
+--			ebi_address => ebi_address(18 downto 0),
+--			ebi_data => ebi_data,
+--			ebi_wen => ebi_wen,
+--			ebi_ren => ebi_ren,
+--			ebi_cs => ebi_cs0,
+--			daisy_data => x"0000",
+--			daisy_valid => '0',
+--			hdmi_ready => hdmi_ready,
+--			hdmi_data => hdmi_data,
+--			hdmi_valid => hdmi_valid,
+--			sram1_address => sram1_address,
+--			sram1_data => sram1_data,
+--			sram1_ce => sram1_ce,
+--			sram1_oe => sram1_oe,
+--			sram1_we => sram1_we,
+--			sram2_address => sram2_address,
+--			sram2_data => sram2_data,
+--			sram2_ce => sram2_ce,
+--			sram2_oe => sram2_oe,
+--			sram2_we => sram2_we
+--		);
 
 	hdmi : entity work.hdmi
 	port map (
 		RSTBTN_n => RSTBTN_n,
-		clk120 => clk120,
+		clk25 => clk25,
 		RX0_TMDS => RX0_TMDS, 
 		RX0_TMDSB => RX0_TMDSB,
 		TX0_TMDS => TX0_TMDS,
 		TX0_TMDSB => TX0_TMDSB,
-		received_pixel => received_pixel,
-		processed_pixel => processed_pixel
+		metadata_out => metadata_out,
+		metadata_in => metadata_in,
+		received_pixel => pixel_from_hdmi,
+		processed_pixel => pixel_from_daisy
 		--pclk => pixel_clk,
 		--pdata => pixel_data,
 		--pready => pixel_ready

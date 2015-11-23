@@ -12,7 +12,10 @@ module hdmi (
   output wire [3:0] TX0_TMDSB,
 
   output wire [23:0] received_pixel,
-  input wire [23:0] processed_pixel
+  input wire [23:0] processed_pixel,
+
+  output wire [2:0] metadata_out,
+  input wire [2:0] metadata_in
 
  // input  wire [1:0] SW,
 
@@ -47,6 +50,10 @@ module hdmi (
   wire [7:0] processed_red;
   wire [7:0] processed_green;
   wire [7:0] processed_blue;
+
+  wire processed_hsync;
+  wire processed_vsync;
+  wire processed_de;
 
   reg [1:0] select_q = 2'b00;
   reg [1:0] switch = 2'b00;
@@ -124,6 +131,11 @@ module hdmi (
 
     wire [23:0] pixel_from_hdmi;
 
+    wire [2:0] metadata_rx;
+
+
+    assign metadata_out = metadata_rx;
+    assign metadata_rx = {rx0_hsync, rx0_vsync, rx0_de};
     assign received_pixel = pixel_from_hdmi;
     assign pixel_from_hdmi = {rx0_red, rx0_green, rx0_blue};
 //
@@ -239,6 +251,8 @@ module hdmi (
   assign tx0_pll_reset    = rx0_reset;
 
   assign {processed_red, processed_green, processed_blue} = processed_pixel;
+  
+  assign {processed_hsync, processed_vsync, processed_de} = metadata_in;
 
   //////////////////////////////////////////////////////////////////
   // Instantiate a dedicate PLL for output port
@@ -299,15 +313,18 @@ module hdmi (
     .pclkx10     (tx0_pclkx10),
     .serdesstrobe(tx0_serdesstrobe),
     .rstin       (tx0_reset),
-   // .blue_din    (processed_blue),
-   // .green_din   (processed_green),
-   // .red_din     (processed_red),
-    .blue_din    (tx0_blue),
-    .green_din   (tx0_green),
-    .red_din     (tx0_red),
-    .hsync       (tx0_hsync),
-    .vsync       (tx0_vsync),
-    .de          (tx0_de),
+    .blue_din    (processed_blue),
+    .green_din   (processed_green),
+    .red_din     (processed_red),
+   // .blue_din    (tx0_blue),
+   // .green_din   (tx0_green),
+   // .red_din     (tx0_red),
+   // .hsync       (tx0_hsync),
+   // .vsync       (tx0_vsync),
+   // .de          (tx0_de),
+    .hsync       (processed_hsync),
+    .vsync       (processed_vsync),
+    .de          (processed_de),
     .TMDS        (TX0_TMDS),
     .TMDSB       (TX0_TMDSB));
 
