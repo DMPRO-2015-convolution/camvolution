@@ -177,22 +177,6 @@ port map(
 	O => clk40
 );
 
---pixelclock_generator : BUFIO2
---	port map(
---		DIVCLK     => divclk,
---		IOCLK      => ioclk,
---		SERDESSTROBE => serdesstrobe,
---		I            => clk120
---		);
-		
---pixel_bufg : BUFG
---	port map(
---		O => pixel_clk,
---		I => pixelclock
---	);
-	
-	
-		
 daisy :  Tile
 	port map(
 	clk => tx0_pclk, 
@@ -251,7 +235,8 @@ daisy :  Tile
 		TX0_TMDSB => TX0_TMDSB,
 		tx0_pclk => tx0_pclk,
 		received_pixel => received_pixel,
-		processed_pixel => processed_pixel
+		processed_pixel => processed_pixel,
+		led => led
 	);
 	
 	fifo_ebi : entity work.fifo_19bit
@@ -289,13 +274,13 @@ daisy :  Tile
 	);
 	
 
-	led_manager : entity work.led_blinker
-	port map (
-		clk => clk40,
-		pattern => x"92666490",
-		pattern_wen => true,
-		led => led
-	);
+--	led_manager : entity work.led_blinker
+--	port map (
+--		clk => clk40,
+--		pattern => x"92666490",
+--		pattern_wen => true,
+--		led => led
+--	);
 
 end Behavioral;
 

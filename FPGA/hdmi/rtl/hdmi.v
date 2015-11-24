@@ -12,6 +12,8 @@ module hdmi (
   output wire [23:0] received_pixel,
   output wire tx0_pclk,
 
+  output wire led,
+
   input wire [23:0] processed_pixel
 );
 
@@ -155,13 +157,13 @@ module hdmi (
 
   // Generate correct control signals
 
-  //640x480@60HZ
+  //640x480@59.94HZ
   parameter HPIXELS_VGA = 11'd640; //Horizontal Live Pixels
   parameter VLINES_VGA  = 11'd480; //Vertical Live ines
   parameter HSYNCPW_VGA = 11'd96;  //HSYNC Pulse Width
   parameter VSYNCPW_VGA = 11'd2;   //VSYNC Pulse Width
   parameter HFNPRCH_VGA = 11'd16;  //Horizontal Front Portch
-  parameter VFNPRCH_VGA = 11'd11;  //Vertical Front Portch
+  parameter VFNPRCH_VGA = 11'd12;  //Vertical Front Portch
   parameter HBKPRCH_VGA = 11'd48;  //Horizontal Front Portch
   parameter VBKPRCH_VGA = 11'd31;  //Vertical Front Portch
 
@@ -172,19 +174,39 @@ module hdmi (
   wire   [10:0] bgnd_vcount;
   wire          bgnd_vsync;
   wire          bgnd_vblnk;
+  wire		    fifo_valid;
+
+  reg started = 1'd0;
+  reg valid = 1'd0;
+
+  assign led = started;
+
+  always @ (posedge rx0_pclk)
+  begin
+	started <= started || (rx0_vsync && rx0_hsync);
+  end
+
+  always @ (posedge tx0_pclk)
+  begin
+	valid <= valid || fifo_valid;
+  end
+  
 
 	 
 pixel_fifo rx_fifo (
 	.wr_clk(rx0_pclk),
 	.rd_clk(tx0_pclk),
 	.din(fifo_data), // Bus [26 : 0] 
-	.wr_en(rx0_de),
+	.wr_en(started),
 	.rd_en(!bgnd_hblnk && !bgnd_vblnk),
-	.dout(data_from_fifo)
+	.dout(data_from_fifo),
+	.valid(fifo_valid)
 	);
 
   timing timing_inst (
 	// inputs
+    .clk(tx0_pclk),
+    .restart(!valid),
     .tc_hsblnk(HPIXELS_VGA - 11'd1),
     .tc_hssync(HPIXELS_VGA - 11'd1 + HFNPRCH_VGA),
     .tc_hesync(HPIXELS_VGA - 11'd1 + HFNPRCH_VGA + HSYNCPW_VGA),
@@ -199,9 +221,7 @@ pixel_fifo rx_fifo (
     .hblnk(bgnd_hblnk),
     .vcount(bgnd_vcount),
     .vsync(VGA_VSYNC_INT),
-    .vblnk(bgnd_vblnk),
-    .restart(reset),
-    .clk(tx0_pclk));
+    .vblnk(bgnd_vblnk));
 
 
   // Actual output
