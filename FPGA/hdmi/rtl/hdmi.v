@@ -1,72 +1,24 @@
 `timescale 1 ns / 1 ps
 
-//`define DIRECTPASS
-
 module hdmi (
   input wire        rstbtn_n,    //The pink reset button
-  input wire        clk25,      //100 MHz osicallator
+  input wire        clk25,
   input wire [3:0]  RX0_TMDS,
   input wire [3:0]  RX0_TMDSB,
 
   output wire [3:0] TX0_TMDS,
   output wire [3:0] TX0_TMDSB,
 
-	output wire [23:0] received_pixel,
-	output wire tx0_pclk,
+  output wire [23:0] received_pixel,
+  output wire tx0_pclk,
+
   input wire [23:0] processed_pixel
-
- // input  wire [1:0] SW,
-
- // output wire [7:0] LED
 );
 
-  ////////////////////////////////////////////////////
-  // 25 MHz and switch debouncers
-  ////////////////////////////////////////////////////
- // wire clk25, clk25m;
-
-  wire [1:0] SW;
-  wire         tx0_de;
-  assign SW[0] = 1'b1;
-  assign SW[1] = 1'b1;
-  
-  //wire         tx0_pclk;
-
- // BUFIO2 #(.DIVIDE_BYPASS("FALSE"), .DIVIDE(6))
- // sysclk_div (.DIVCLK(clk25m), .IOCLK(), .SERDESSTROBE(), .I(clk120));
-
- // BUFG clk25_buf (.I(clk25m), .O(clk25));
-
-  wire [1:0] sws;
-
-  synchro #(.INITIALIZE("LOGIC0"))
-  synchro_sws_0 (.async(SW[0]),.sync(sws[0]),.clk(clk25));
-
-  synchro #(.INITIALIZE("LOGIC0"))
-  synchro_sws_1 (.async(SW[1]),.sync(sws[1]),.clk(clk25));
-
-  wire [1:0] select = sws;
-
-  wire [7:0] processed_red;
-  wire [7:0] processed_green;
-  wire [7:0] processed_blue;
-
-  wire processed_hsync;
-  wire processed_vsync;
-  wire processed_de;
-
-  reg [1:0] select_q = 2'b00;
-  reg [1:0] switch = 2'b00;
-  always @ (posedge clk25) begin
-    select_q <= select;
-
-    switch[0] = select[0] ^ select_q[0];
-    switch[1] = select[1] ^ select_q[1];
-  end
 
   /////////////////////////
   //
-  // Input Port 0
+  // HDMI Input
   //
   /////////////////////////
   wire rx0_pclk, rx0_pclkx2, rx0_pclkx10, rx0_pllclk0;
@@ -130,139 +82,26 @@ module hdmi (
     .blue        (rx0_blue));
 
 
-    wire [23:0] pixel_from_hdmi;
-
-    wire [26:0] pixel_from_fifo; 
+    wire [26:0] data_from_fifo; 
     wire [26:0] fifo_data;
-    wire [2:0] metadata_rx;
 	 
-pixel_fifo pixelfifo (
+pixel_fifo rx_fifo (
 	.wr_clk(rx0_pclk),
 	.rd_clk(tx0_pclk),
 	.din(fifo_data), // Bus [26 : 0] 
 	.wr_en(1),
 	.rd_en(1),
-	.dout(pixel_from_fifo),
+	.dout(data_from_fifo),
 	.full(full_lol),
 	.empty(empty_lol)// Bus [26 : 0] 
 	);
 
-	
-    wire [7:0] red;
-    wire [7:0] green;
-    wire [7:0] blue;
-//    wire hsync;
-    wire vsync;
-    wire de;
+  assign fifo_data = {rx0_de, rx0_vsync, rx0_hsync, rx0_blue, rx0_green, rx0_red};
 
-    assign red = rx0_red;
-    assign green = rx0_green;
-    assign blue = rx0_blue;
-    assign hsync = rx0_hsync;
-    assign vsync = rx0_vsync;
-    assign de = rx0_de;
 
-	//wire [26:0] pixel_from_fifo;
-    assign fifo_data[7:0] = red;
-    assign fifo_data[15:8] = green;
-    assign fifo_data[23:16] = blue;
-    assign fifo_data[24] = hsync;
-    assign fifo_data[25] = vsync;
-    assign fifo_data[26] = de;
-
-    assign metadata_out = metadata_rx;
-    assign metadata_rx = {rx0_hsync, rx0_vsync, rx0_de};
-    //assign received_pixel = pixel_from_hdmi;
-    assign pixel_from_hdmi = {rx0_red, rx0_green, rx0_blue};
-//
-  // TMDS output
-`ifdef DIRECTPASS
-  wire rstin         = rx0_reset;
-  wire pclk          = rx0_pclk;
-  wire pclkx2        = rx0_pclkx2;
-  wire pclkx10       = rx0_pclkx10;
-  wire serdesstrobe  = rx0_serdesstrobe;
-  wire [29:0] s_data = rx0_sdata;
-
-  //
-  // Forward TMDS Clock Using OSERDES2 block
-  //
-  reg [4:0] tmdsclkint = 5'b00000;
-  reg toggle = 1'b0;
-
-  always @ (posedge pclkx2 or posedge rstin) begin
-    if (rstin)
-      toggle <= 1'b0;
-    else
-      toggle <= ~toggle;
-  end
-
-  always @ (posedge pclkx2) begin
-    if (toggle)
-      tmdsclkint <= 5'b11111;
-    else
-      tmdsclkint <= 5'b00000;
-  end
-
-  wire tmdsclk;
-
-  serdes_n_to_1 #(
-    .SF           (5))
-  clkout (
-    .iob_data_out (tmdsclk),
-    .ioclk        (pclkx10),
-    .serdesstrobe (serdesstrobe),
-    .gclk         (pclkx2),
-    .reset        (rstin),
-    .datain       (tmdsclkint));
-
-  OBUFDS TMDS3 (.I(tmdsclk), .O(TX0_TMDS[3]), .OB(TX0_TMDSB[3])) ;// clock
-
-  wire [4:0] tmds_data0, tmds_data1, tmds_data2;
-  wire [2:0] tmdsint;
-
-  //
-  // Forward TMDS Data: 3 channels
-  //
-  serdes_n_to_1 #(.SF(5)) oserdes0 (
-             .ioclk(pclkx10),
-             .serdesstrobe(serdesstrobe),
-             .reset(rstin),
-             .gclk(pclkx2),
-             .datain(tmds_data0),
-             .iob_data_out(tmdsint[0])) ;
-
-  serdes_n_to_1 #(.SF(5)) oserdes1 (
-             .ioclk(pclkx10),
-             .serdesstrobe(serdesstrobe),
-             .reset(rstin),
-             .gclk(pclkx2),
-             .datain(tmds_data1),
-             .iob_data_out(tmdsint[1])) ;
-
-  serdes_n_to_1 #(.SF(5)) oserdes2 (
-             .ioclk(pclkx10),
-             .serdesstrobe(serdesstrobe),
-             .reset(rstin),
-             .gclk(pclkx2),
-             .datain(tmds_data2),
-             .iob_data_out(tmdsint[2])) ;
-
-  OBUFDS TMDS0 (.I(tmdsint[0]), .O(TX0_TMDS[0]), .OB(TX0_TMDSB[0])) ;
-  OBUFDS TMDS1 (.I(tmdsint[1]), .O(TX0_TMDS[1]), .OB(TX0_TMDSB[1])) ;
-  OBUFDS TMDS2 (.I(tmdsint[2]), .O(TX0_TMDS[2]), .OB(TX0_TMDSB[2])) ;
-
-  convert_30to15_fifo pixel2x (
-    .rst     (rstin),
-    .clk     (pclk),
-    .clkx2   (pclkx2),
-    .datain  (s_data),
-    .dataout ({tmds_data2, tmds_data1, tmds_data0}));
-
-`else
   /////////////////
   //
-  // Output Port 0
+  // HDMI Output
   //
   /////////////////
 
@@ -278,17 +117,7 @@ pixel_fifo pixelfifo (
   wire         tx0_vsync;
   wire         tx0_pll_reset;
 
-  //assign tx0_de           = rx0_de;
-  //assign tx0_blue         = rx0_blue;
-  //assign tx0_green        = rx0_green;
-  //assign tx0_red          = rx0_red;
-  //assign tx0_hsync        = rx0_hsync;
-  //assign tx0_vsync        = rx0_vsync;
   assign tx0_pll_reset    = rx0_reset;
-
- // assign {processed_red, processed_green, processed_blue} = processed_pixel;
-  
- // assign {processed_hsync, processed_vsync, processed_de} = metadata_in;
 
   //////////////////////////////////////////////////////////////////
   // Instantiate a dedicate PLL for output port
@@ -317,70 +146,41 @@ pixel_fifo pixelfifo (
     .RST(tx0_pll_reset)
   );
 
-  //
   // This BUFGMUX directly selects between two RX PLL pclk outputs
   // This way we have a matched skew between the RX pclk clocks and the TX pclk
-  //
-  BUFGMUX tx0_bufg_pclk (.S(select[0]), .I1(rx0_pllclk1), .I0(rx0_pllclk1), .O(tx0_pclk));
+  BUFG tx0_bufg_pclk (.I(rx0_pllclk1), .O(tx0_pclk));
 
-  //
   // This BUFG is needed in order to deskew between PLL clkin and clkout
   // So the tx0 pclkx2 and pclkx10 will have the same phase as the pclk input
-  //
   BUFG tx0_clkfb_buf (.I(tx0_clkfbout), .O(tx0_clkfbin));
 
-  //
   // regenerate pclkx2 for TX
-  //
   BUFG tx0_pclkx2_buf (.I(tx0_pllclk2), .O(tx0_pclkx2));
 
-  //
   // regenerate pclkx10 for TX
-  //
   wire tx0_bufpll_lock;
   BUFPLL #(.DIVIDE(5)) tx0_ioclk_buf (.PLLIN(tx0_pllclk0), .GCLK(tx0_pclkx2), .LOCKED(tx0_plllckd),
            .IOCLK(tx0_pclkx10), .SERDESSTROBE(tx0_serdesstrobe), .LOCK(tx0_bufpll_lock));
 
+
+  // Actual output
   assign tx0_reset = ~tx0_bufpll_lock;
+  assign received_pixel = data_from_fifo[23:0];
 
-	// Send pixel out of module
-	assign received_pixel = pixel_from_fifo[23:0];
 
-	assign processed_red = pixel_from_fifo[7:0];
-	assign processed_green = pixel_from_fifo[15:8];
-	assign processed_blue = pixel_from_fifo[23:16];
-	assign processed_hsync = pixel_from_fifo[24];
-	assign processed_vsync = pixel_from_fifo[25];
-	assign processed_de = pixel_from_fifo[26];
-	
   dvi_encoder_top dvi_tx0 (
     .pclk        (tx0_pclk),
     .pclkx2      (tx0_pclkx2),
     .pclkx10     (tx0_pclkx10),
     .serdesstrobe(tx0_serdesstrobe),
     .rstin       (tx0_reset),
-    //.blue_din    (processed_blue),
-    //.green_din   (processed_green),
-    //.red_din     (processed_red),
-		.blue_din(processed_pixel[23:16]),
-		.green_din(processed_pixel[15:8]),
-		.red_din(processed_pixel[7:0]),
-   // .blue_din    (tx0_blue),
-   // .green_din   (tx0_green),
-   // .red_din     (tx0_red),
-   // .hsync       (tx0_hsync),
-   // .vsync       (tx0_vsync),
-   // .de          (tx0_de),
-    .hsync       (processed_hsync),
-    .vsync       (processed_vsync),
-    .de          (processed_de),
+	.blue_din	(processed_pixel[23:16]),
+	.green_din	(processed_pixel[15:8]),
+	.red_din	(processed_pixel[7:0]),
+    .hsync       (data_from_fifo[24]),
+    .vsync       (data_from_fifo[25]),
+    .de          (data_from_fifo[26]),
     .TMDS        (TX0_TMDS),
     .TMDSB       (TX0_TMDSB));
-
-`endif
-
-  //////////////////////////////////////
-  // Status LED
-  //////////////////////////////////////
 
 endmodule

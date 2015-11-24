@@ -46,7 +46,7 @@ architecture Behavioral of Camvolution is
    signal io_dbg_rdy_for_output : std_logic := '0';
    signal io_dbg_rdy_for_input : std_logic := '0';
 	
-	signal clk25 : std_logic;
+	signal clk25, clk40, clk40_pre : std_logic;
 	
 	signal pixel_from_hdmi : std_logic_vector(23 downto 0) :=(others => '0');
 	signal pixel_from_daisy : std_logic_vector(23 downto 0) :=(others => '0');
@@ -162,6 +162,22 @@ port map(
 		CLKFX => clk25
 	);
 
+clk40_generate : BUFIO2
+generic map(
+	DIVIDE_BYPASS => false,
+	DIVIDE => 3
+)
+port map(
+		I => clk120,
+		DIVCLK => clk40_pre
+	);
+
+clk40_bufg : BUFG
+port map(
+	I => clk40_pre,
+	O => clk40
+);
+
 --pixelclock_generator : BUFIO2
 --	port map(
 --		DIVCLK     => divclk,
@@ -186,29 +202,17 @@ daisy :  Tile
 	io_data_out => daisy_out
 );
 
+	efm_mode <= false; -- TODO: Connect ebi manager
 	led <= '0';
-	processed_pixel <= hdmi_data; -- when efm_mode else daisy_out;
+	processed_pixel <= pixel_data when efm_mode else daisy_out;
 	
---   generate_sysclk : IBUF
- --    port map (
---						O => sysclk,
---					   I => clk120
---						);
-
-
---	memory_clk_bufg : IBUFG
---	port map(
---		O => memory_clk,
---		I => memoryclk
---	);
-	
-
 	-- Constant values for memory
 	sram1_lb <= '0';
 	sram1_ub <= '0';
 	sram2_lb <= '0';
 	sram2_ub <= '0';
 	
+	-- Handles reading and writing to SRAM
 	memory_manager : entity work.memory_manager
 		generic map (
 			IMAGE_WIDTH => IMAGE_WIDTH,
@@ -251,14 +255,6 @@ daisy :  Tile
 		tx0_pclk => tx0_pclk,
 		received_pixel => received_pixel,
 		processed_pixel => processed_pixel
-		--metadata_out => metadata_out,
-		--metadata_in => metadata_in,
-		--received_pixel => pixel_from_hdmi,
-		--processed_pixel => pixel_from_daisy
-		--pclk => pixel_clk,
-		--pdata => pixel_data,
-		--pready => pixel_ready
-
 	);
 	
 --	fifo_ebi : entity work.fifo_16bit
@@ -272,22 +268,21 @@ daisy :  Tile
 --			empty => ebi_empty_sync
 --		);
 	
---	fifo_hdmi : entity work.fifo_24bit
---		port map (
---			wr_clk => memory_clk,
---			rd_clk => pixel_clk,
---			din => hdmi_data,
---			wr_en => hdmi_valid,
---			rd_en => pixel_ready,
---			dout => pixel_data,
---			full => hdmi_ready
---		);
+	fifo_hdmi : entity work.fifo_24bit
+		port map (
+			wr_clk => clk40,
+			rd_clk => tx0_pclk,
+			din => hdmi_data,
+			wr_en => hdmi_valid,
+			rd_en => '1',
+			dout => pixel_data
+		);
 	
---	ram_clk_divider : entity work.ram_clk_divider
---	port map (
---		clk_in1 => sysclk,
---		clk_out1 => memory_clk
---	);
+	--ram_clk_divider : entity work.ram_clk_divider
+	--port map (
+	--	clk_in1 => clk120,
+	--	clk_out1 => memory_clk
+	--);
 	
 	fifo_ebi_valid <= not ebi_empty_sync;
 
