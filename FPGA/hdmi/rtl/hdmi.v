@@ -84,17 +84,7 @@ module hdmi (
 
     wire [26:0] data_from_fifo; 
     wire [26:0] fifo_data;
-	 
-pixel_fifo rx_fifo (
-	.wr_clk(rx0_pclk),
-	.rd_clk(tx0_pclk),
-	.din(fifo_data), // Bus [26 : 0] 
-	.wr_en(1),
-	.rd_en(1),
-	.dout(data_from_fifo),
-	.full(full_lol),
-	.empty(empty_lol)// Bus [26 : 0] 
-	);
+
 
   assign fifo_data = {rx0_de, rx0_vsync, rx0_hsync, rx0_blue, rx0_green, rx0_red};
 
@@ -163,6 +153,57 @@ pixel_fifo rx_fifo (
            .IOCLK(tx0_pclkx10), .SERDESSTROBE(tx0_serdesstrobe), .LOCK(tx0_bufpll_lock));
 
 
+  // Generate correct control signals
+
+  //640x480@60HZ
+  parameter HPIXELS_VGA = 11'd640; //Horizontal Live Pixels
+  parameter VLINES_VGA  = 11'd480; //Vertical Live ines
+  parameter HSYNCPW_VGA = 11'd96;  //HSYNC Pulse Width
+  parameter VSYNCPW_VGA = 11'd2;   //VSYNC Pulse Width
+  parameter HFNPRCH_VGA = 11'd16;  //Horizontal Front Portch
+  parameter VFNPRCH_VGA = 11'd11;  //Vertical Front Portch
+  parameter HBKPRCH_VGA = 11'd48;  //Horizontal Front Portch
+  parameter VBKPRCH_VGA = 11'd31;  //Vertical Front Portch
+
+  wire VGA_HSYNC_INT, VGA_VSYNC_INT;
+  wire   [10:0] bgnd_hcount;
+  wire          bgnd_hsync;
+  wire          bgnd_hblnk;
+  wire   [10:0] bgnd_vcount;
+  wire          bgnd_vsync;
+  wire          bgnd_vblnk;
+
+	 
+pixel_fifo rx_fifo (
+	.wr_clk(rx0_pclk),
+	.rd_clk(tx0_pclk),
+	.din(fifo_data), // Bus [26 : 0] 
+	.wr_en(rx0_de),
+	.rd_en(!bgnd_hblnk && !bgnd_vblnk),
+	.dout(data_from_fifo)
+	);
+
+  timing timing_inst (
+	// inputs
+    .tc_hsblnk(HPIXELS_VGA - 11'd1),
+    .tc_hssync(HPIXELS_VGA - 11'd1 + HFNPRCH_VGA),
+    .tc_hesync(HPIXELS_VGA - 11'd1 + HFNPRCH_VGA + HSYNCPW_VGA),
+    .tc_heblnk(HPIXELS_VGA - 11'd1 + HFNPRCH_VGA + HSYNCPW_VGA + HBKPRCH_VGA),
+    .tc_vsblnk(VLINES_VGA - 11'd1),
+    .tc_vssync(VLINES_VGA - 11'd1 + VFNPRCH_VGA),
+    .tc_vesync(VLINES_VGA - 11'd1 + VFNPRCH_VGA + VSYNCPW_VGA),
+    .tc_veblnk(VLINES_VGA - 11'd1 + VFNPRCH_VGA + VSYNCPW_VGA + VBKPRCH_VGA),
+	// outputs
+    .hcount(bgnd_hcount),
+    .hsync(VGA_HSYNC_INT),
+    .hblnk(bgnd_hblnk),
+    .vcount(bgnd_vcount),
+    .vsync(VGA_VSYNC_INT),
+    .vblnk(bgnd_vblnk),
+    .restart(reset),
+    .clk(tx0_pclk));
+
+
   // Actual output
   assign tx0_reset = ~tx0_bufpll_lock;
   assign received_pixel = data_from_fifo[23:0];
@@ -174,12 +215,12 @@ pixel_fifo rx_fifo (
     .pclkx10     (tx0_pclkx10),
     .serdesstrobe(tx0_serdesstrobe),
     .rstin       (tx0_reset),
-	.blue_din	(processed_pixel[23:16]),
-	.green_din	(processed_pixel[15:8]),
-	.red_din	(processed_pixel[7:0]),
-    .hsync       (data_from_fifo[24]),
-    .vsync       (data_from_fifo[25]),
-    .de          (data_from_fifo[26]),
+	.blue_din	(data_from_fifo[23:16]),
+	.green_din	(data_from_fifo[15:8]),
+	.red_din	(data_from_fifo[7:0]),
+    .hsync       (VGA_HSYNC_INT),
+    .vsync       (VGA_VSYNC_INT),
+    .de          (!bgnd_hblnk && !bgnd_vblnk),
     .TMDS        (TX0_TMDS),
     .TMDSB       (TX0_TMDSB));
 
