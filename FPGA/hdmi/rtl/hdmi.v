@@ -179,17 +179,16 @@ module hdmi (
   wire   [10:0] bgnd_vcount;
   wire          bgnd_vsync;
   wire          bgnd_vblnk;
- // wire		    fifo_valid;
 
   reg started = 1'd0;
   reg valid = 1'd0;
 
   assign led = started;
 
- // always @ (posedge rx0_pclk)
- // begin
-//	started <= started || (rx0_vsync && rx0_hsync && (rx0_red_vld | rx0_green_vld | rx0_blue_vld));
- // end
+ always @ (posedge rx0_pclk)
+	begin
+	started <= started || (rx0_vsync && rx0_hsync);
+  end
 
   always @ (posedge tx0_pclk)
   begin
