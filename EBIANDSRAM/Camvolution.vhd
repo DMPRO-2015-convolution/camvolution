@@ -52,6 +52,9 @@ architecture Behavioral of Camvolution is
 	signal pixel_from_daisy : std_logic_vector(23 downto 0) :=(others => '0');
 	signal efm_mode : boolean;
 	
+	signal fifo_valid : std_logic;
+	signal full_processed_fifo : std_logic;
+	
 	-- FIFO 16 bit
 	signal fifo_ebi_valid : std_logic;
 	signal fifo_ebi_ready : std_logic;
@@ -146,9 +149,14 @@ architecture Behavioral of Camvolution is
 	port (
 	clk : in std_logic; 
 	reset : in std_logic;
+	io_reset : in std_logic;
+	io_control_data_in : in std_logic_vector(23 downto 0);
    io_hdmi_data_in : inout std_logic_vector(23 downto 0);
-   io_data_out : out std_logic_vector(23 downto 0)
- 
+	io_data_out : out std_logic_vector(23 downto 0);
+	io_control_input_valid : in std_logic;
+	io_hdmi_input_valid : in std_logic;
+	io_output_valid : out std_logic;
+	io_request_processed_data : in std_logic
 );
 end component;
 
@@ -179,11 +187,19 @@ port map(
 
 daisy :  Tile
 	port map(
-	clk => tx0_pclk, 
-	reset => io_reset,
-	io_hdmi_data_in => received_pixel,
-	io_data_out => daisy_out
+	clk => clk40, 
+	reset => RSTBTN_n,
+	io_reset => '0',
+	io_control_data_in => (others=>'0'),
+   io_hdmi_data_in => received_pixel,
+	io_data_out => daisy_out,
+	io_control_input_valid => '0',
+	io_hdmi_input_valid => fifo_valid,
+	io_output_valid => io_output_valid,
+	io_request_processed_data => not full_processed_fifo
 );
+--	daisy_out <= received_pixel;
+--	io_output_valid <= fifo_valid;
 
 	processed_pixel <= pixel_data when efm_mode else daisy_out;
 	
@@ -236,6 +252,10 @@ daisy :  Tile
 		tx0_pclk => tx0_pclk,
 		received_pixel => received_pixel,
 		processed_pixel => processed_pixel,
+		daisy_clock => clk40,
+		io_output_valid => io_output_valid,
+		full_processed_fifo => full_processed_fifo,
+		fifo_valid => fifo_valid,
 		led => led
 	);
 	

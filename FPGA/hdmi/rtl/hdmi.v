@@ -14,6 +14,10 @@ module hdmi (
 
   output wire led,
 
+  input wire daisy_clock,
+  input wire io_output_valid,
+  output wire full_processed_fifo,
+  output wire fifo_valid,
   input wire [23:0] processed_pixel
 );
 
@@ -155,6 +159,7 @@ module hdmi (
            .IOCLK(tx0_pclkx10), .SERDESSTROBE(tx0_serdesstrobe), .LOCK(tx0_bufpll_lock));
 
 
+	
   // Generate correct control signals
 
   //640x480@59.94HZ
@@ -174,31 +179,32 @@ module hdmi (
   wire   [10:0] bgnd_vcount;
   wire          bgnd_vsync;
   wire          bgnd_vblnk;
-  wire		    fifo_valid;
+ // wire		    fifo_valid;
 
   reg started = 1'd0;
   reg valid = 1'd0;
 
   assign led = started;
 
-  always @ (posedge rx0_pclk)
-  begin
-	started <= started || (rx0_vsync && rx0_hsync);
-  end
+ // always @ (posedge rx0_pclk)
+ // begin
+//	started <= started || (rx0_vsync && rx0_hsync && (rx0_red_vld | rx0_green_vld | rx0_blue_vld));
+ // end
 
   always @ (posedge tx0_pclk)
   begin
 	valid <= valid || fifo_valid;
   end
   
+  
 
 	 
 pixel_fifo rx_fifo (
 	.wr_clk(rx0_pclk),
-	.rd_clk(tx0_pclk),
+	.rd_clk(daisy_clock),
 	.din(fifo_data), // Bus [26 : 0] 
-	.wr_en(started),
-	.rd_en(!bgnd_hblnk && !bgnd_vblnk),
+	.wr_en(rx0_de),
+	.rd_en(1),
 	.dout(data_from_fifo),
 	.valid(fifo_valid)
 	);
@@ -227,7 +233,19 @@ pixel_fifo rx_fifo (
   // Actual output
   assign tx0_reset = ~tx0_bufpll_lock;
   assign received_pixel = data_from_fifo[23:0];
+  wire [23:0] processed_pixel_from_fifo;
+  //wire full_processed_fifo;
 
+processed_pixel_fifo processed_fifo (
+	.wr_clk(daisy_clock),
+	.rd_clk(tx0_pclk),
+	.din(processed_pixel), // Bus [23 : 0] 
+	.wr_en(io_output_valid),
+	.rd_en(!bgnd_hblnk && !bgnd_vblnk),
+	.dout(processed_pixel_from_fifo), // Bus [23 : 0] 
+	.full(full_processed_fifo),
+	.empty(emptylolol),
+	.valid(validlolol));
 
   dvi_encoder_top dvi_tx0 (
     .pclk        (tx0_pclk),
@@ -235,12 +253,15 @@ pixel_fifo rx_fifo (
     .pclkx10     (tx0_pclkx10),
     .serdesstrobe(tx0_serdesstrobe),
     .rstin       (tx0_reset),
-	.blue_din	(data_from_fifo[23:16]),
-	.green_din	(data_from_fifo[15:8]),
-	.red_din	(data_from_fifo[7:0]),
+	.blue_din	(processed_pixel_from_fifo[23:16]),
+	.green_din	(processed_pixel_from_fifo[15:8]),
+	.red_din	(processed_pixel_from_fifo[7:0]),
     .hsync       (VGA_HSYNC_INT),
     .vsync       (VGA_VSYNC_INT),
     .de          (!bgnd_hblnk && !bgnd_vblnk),
+	 //.hsync		(rx0_hsync),
+	 //.vsync		(rx0_vsync),
+	 //.de			(rx0_de),
     .TMDS        (TX0_TMDS),
     .TMDSB       (TX0_TMDSB));
 
