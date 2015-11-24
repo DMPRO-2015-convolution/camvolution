@@ -16,7 +16,6 @@ entity ebi_manager is
 		
 		-- EBI address and data 
 		ebi_address : in std_logic_vector(1 downto 0);
-		ebi_cs : in std_logic;
 		ebi_data : in std_logic_vector(15 downto 0);
 		
 		-- FIFO
@@ -44,7 +43,7 @@ begin
 	process (clk) is
 	begin
 		if rising_edge(clk) then
-			if fifo_valid = '1' and ebi_address = "01" and ebi_cs = '1' then
+			if fifo_valid = '1' and ebi_address = "01" then
 				efm_mode_reg <= ebi_data(0) = '1';
 			end if;
 		end if;

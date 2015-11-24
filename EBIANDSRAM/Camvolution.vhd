@@ -80,8 +80,7 @@ architecture Behavioral of Camvolution is
 	signal memoryclk : std_logic;
 	
 	-- EBI signals
-	signal ebi_data_sync : std_logic_vector(15 downto 0);
-	signal ebi_empty_sync : std_logic;
+	signal ebi_synced : std_logic_vector(18 downto 0);
 	
 
 	
@@ -202,8 +201,6 @@ daisy :  Tile
 	io_data_out => daisy_out
 );
 
-	efm_mode <= false; -- TODO: Connect ebi manager
-	led <= '0';
 	processed_pixel <= pixel_data when efm_mode else daisy_out;
 	
 	-- Constant values for memory
@@ -257,16 +254,16 @@ daisy :  Tile
 		processed_pixel => processed_pixel
 	);
 	
---	fifo_ebi : entity work.fifo_16bit
---		port map (	
---			wr_clk => ebi_wen,
---			rd_clk => sysclk,	-- Probably more like "daisy_clk"...
---			din => ebi_data,
---			wr_en => '1',
---			rd_en => fifo_ebi_ready,
---			dout => ebi_data_sync,
---			empty => ebi_empty_sync
---		);
+	fifo_ebi : entity work.fifo_19bit
+		port map (	
+			wr_clk => ebi_wen,
+			rd_clk => clk40,
+			din => ebi_address(2 downto 0) & ebi_data,
+			wr_en => not ebi_cs0,
+			rd_en => fifo_ebi_ready,
+			dout => ebi_synced,
+			valid => fifo_ebi_valid
+		);
 	
 	fifo_hdmi : entity work.fifo_24bit
 		port map (
@@ -277,29 +274,28 @@ daisy :  Tile
 			rd_en => '1',
 			dout => pixel_data
 		);
-	
-	--ram_clk_divider : entity work.ram_clk_divider
-	--port map (
-	--	clk_in1 => clk120,
-	--	clk_out1 => memory_clk
-	--);
-	
-	fifo_ebi_valid <= not ebi_empty_sync;
 
---	ebi_manager : entity work.ebi_manager
---	port map (
---		clk => sysclk,
---		ebi_address => ebi_address(1 downto 0),
---		ebi_cs => ebi_cs0,
---		ebi_data => ebi_data,
---		fifo_valid => fifo_ebi_valid,
---		fifo_ready => fifo_ebi_ready,
---		daisy_reset => open,
---		efm_mode => efm_mode,
---		control_valid => open,
---		control_data => open
---	);
+	ebi_manager : entity work.ebi_manager
+	port map (
+		clk => clk40,
+		ebi_address => ebi_synced(17 downto 16),
+		ebi_data => ebi_synced(15 downto 0),
+		fifo_valid => fifo_ebi_valid,
+		fifo_ready => fifo_ebi_ready,
+		daisy_reset => open,
+		efm_mode => efm_mode,
+		control_valid => open,
+		control_data => open
+	);
 	
+
+	led_manager : entity work.led_blinker
+	port map (
+		clk => clk40,
+		pattern => x"92666490",
+		pattern_wen => true,
+		led => led
+	);
 
 end Behavioral;
 

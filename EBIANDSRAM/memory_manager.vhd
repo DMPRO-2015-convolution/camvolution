@@ -71,13 +71,13 @@ begin
 
 	sram1_data <=
 			ebi_data when efm_mode and ebi_wen = '0' else
-			daisy_data when write_chip = CHIP_SRAM1 and state = STATE_WRITE else
+			daisy_data when write_chip = CHIP_SRAM1 and state = STATE_WRITE and not efm_mode else
 			(others => 'Z');
 			
 	sram1_ce <= '0' when efm_mode or write_chip /= CHIP_SRAM1 or state = STATE_WRITE else '1';
 
 	sram1_oe <= '0' when (not efm_mode and write_chip /= CHIP_SRAM1) or
-			(efm_mode and ebi_ren = '0' and ebi_cs = '0') else '1';
+			(efm_mode and (ebi_ren = '0' or ebi_cs = '1')) else '1';
 
 	sram1_we <= '0' when (not efm_mode and write_chip = CHIP_SRAM1) or
 			(efm_mode and ebi_wen = '0' and ebi_cs = '0') else '1';
