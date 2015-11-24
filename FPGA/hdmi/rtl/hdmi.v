@@ -203,8 +203,8 @@ pixel_fifo rx_fifo (
 	.wr_clk(rx0_pclk),
 	.rd_clk(daisy_clock),
 	.din(fifo_data), // Bus [26 : 0] 
-	.wr_en(rx0_de),
-	.rd_en(1),
+	.wr_en(started && rx0_de),
+	.rd_en(!bgnd_hblnk && !bgnd_vblnk),
 	.dout(data_from_fifo),
 	.valid(fifo_valid)
 	);
